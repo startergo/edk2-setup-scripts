@@ -1,0 +1,56 @@
+## @file
+#  Sample UEFI Application Reference EDKII Module.
+#
+#  This is a sample shell application that will print "UEFI Hello World!" to the
+#  UEFI Console based on PCD setting.
+#
+#  It demos how to use EDKII PCD mechanism to make code more flexible.
+#
+#  Copyright (c) 2008 - 2018, Intel Corporation. All rights reserved.<BR>
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ACPIPatcherDxe
+  FILE_GUID                      = 6987936E-ED34-44db-AE97-1FA5E4ED2116
+  MODULE_TYPE                    = DXE_DRIVER
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = AcpiPatcherEntryPoint
+
+[Sources]
+  ACPIPatcher.c
+  FsHelpers.c
+  FsHelpers.h
+  
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiLib
+  BaseLib
+  MemoryAllocationLib
+  UefiDriverEntryPoint
+  
+[Protocols]
+  gEfiLoadedImageProtocolGuid            ## CONSUMES
+  
+[Guids]
+  gEfiAcpiTableGuid
+  gEfiAcpi20TableGuid
+  gEfiDxeServicesTableGuid
+
+[Depex]
+   gEfiLoadedImageProtocolGuid
+
+[BuildOptions]
+	*_*_*_CC_FLAGS = -D DXE
+

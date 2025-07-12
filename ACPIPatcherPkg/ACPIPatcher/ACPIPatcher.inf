@@ -1,0 +1,70 @@
+## @file
+#  ACPI Patcher UEFI Application
+#
+#  This application patches ACPI tables during UEFI boot by reading .aml files
+#  from an ACPI directory and either replacing the DSDT or adding additional
+#  SSDT tables to the system's XSDT.
+#
+#  Features:
+#  - Validates ACPI table integrity before patching
+#  - Proper error handling and resource cleanup  
+#  - Supports both DSDT replacement and SSDT addition
+#  - Updates checksums for modified tables
+#
+#  Copyright (c) 2008 - 2025, Intel Corporation. All rights reserved.<BR>
+#
+#  This program and the accompanying materials
+#  are licensed and made available under the terms and conditions of the BSD License
+#  which accompanies this distribution. The full text of the license may be found at
+#  http://opensource.org/licenses/bsd-license.php
+#  THE PROGRAM IS DISTRIBUTED UNDER THE BSD LICENSE ON AN "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR REPRESENTATIONS OF ANY KIND, EITHER EXPRESS OR IMPLIED.
+#
+#
+##
+
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = ACPIPatcher
+  FILE_GUID                      = 6987936E-ED34-44db-AE97-1FA5E4ED2116
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.1
+  ENTRY_POINT                    = AcpiPatcherEntryPoint
+
+#
+#  This flag specifies whether HII resource section is generated into PE image.
+#
+  UEFI_HII_RESOURCE_SECTION      = TRUE
+
+#
+# The following information is for reference only and not required by the build tools.
+#
+#  VALID_ARCHITECTURES           = IA32 X64 EBC
+#
+
+[Sources]
+  ACPIPatcher.c
+  FsHelpers.c
+  FsHelpers.h
+  
+[Packages]
+  MdePkg/MdePkg.dec
+
+[LibraryClasses]
+  UefiApplicationEntryPoint
+  UefiLib
+  BaseLib
+  MemoryAllocationLib
+  UefiBootServicesTableLib
+  PrintLib
+  DevicePathLib
+  BaseMemoryLib
+  
+[Protocols]
+  gEfiLoadedImageProtocolGuid            ## CONSUMES
+  
+[Guids]
+  gEfiAcpiTableGuid
+  gEfiAcpi20TableGuid
+  gEfiDxeServicesTableGuid
+

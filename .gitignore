@@ -1,0 +1,11 @@
+# EDK2 Setup Scripts 
+ 
+# Windows 
+Thumbs.db 
+Desktop.ini 
+*.tmp 
+*.log 
+ 
+# Build outputs 
+Build/ 
+Conf/ 

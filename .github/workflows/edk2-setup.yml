@@ -1,0 +1,288 @@
+name: EDK2 Setup and Build
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  setup-edk2:
+    runs-on: windows-2022
+    
+    steps:
+    - name: Checkout EDK2 Setup Scripts
+      uses: actions/checkout@v4
+      with:
+        path: edk2-setup-scripts
+    
+    - name: Checkout EDK2 Repository
+      uses: actions/checkout@v4
+      with:
+        repository: tianocore/edk2
+        path: edk2
+        submodules: true
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Setup Visual Studio
+      uses: microsoft/setup-msbuild@v2
+      with:
+        vs-version: '17.0'
+    
+    - name: Install NASM
+      run: |
+        # Download and install NASM
+        $nasmUrl = "https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/win64/nasm-2.16.01-win64.zip"
+        $nasmZip = "$env:TEMP\nasm.zip"
+        $nasmDir = "C:\NASM"
+        
+        Write-Host "Downloading NASM..."
+        Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
+        
+        Write-Host "Extracting NASM..."
+        Expand-Archive -Path $nasmZip -DestinationPath $env:TEMP
+        
+        Write-Host "Installing NASM to C:\NASM..."
+        New-Item -ItemType Directory -Path $nasmDir -Force
+        Copy-Item -Path "$env:TEMP\nasm-2.16.01\*" -Destination $nasmDir -Recurse -Force
+        
+        Write-Host "Adding NASM to PATH..."
+        echo "C:\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
+    
+    - name: Run EDK2 Setup Script
+      run: |
+        cd edk2
+        ..\edk2-setup-scripts\setup-edk2.bat . --ci
+      shell: cmd
+      env:
+        # Ensure CI environment is detected
+        CI: true
+    
+    - name: Verify BaseTools Build
+      run: |
+        cd edk2
+        if not exist "BaseTools\Bin\Win32\GenFv.exe" (
+          echo "ERROR: GenFv.exe not found - BaseTools build failed"
+          exit /b 1
+        )
+        if not exist "BaseTools\Bin\Win32\GenFfs.exe" (
+          echo "ERROR: GenFfs.exe not found - BaseTools build failed"
+          exit /b 1
+        )
+        echo "BaseTools verification successful!"
+      shell: cmd
+    
+    - name: Build ACPIPatcherPkg
+      run: |
+        cd edk2
+        call edksetup.bat
+        # Build ACPIPatcherPkg if it exists
+        if exist "ACPIPatcherPkg\ACPIPatcherPkg.dsc" (
+          echo "Building ACPIPatcherPkg..."
+          build -a X64 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc
+        ) else (
+          echo "ACPIPatcherPkg not found, building MdeModulePkg as fallback..."
+          build -a X64 -t VS2022 -p MdeModulePkg/MdeModulePkg.dsc -m MdeModulePkg/Universal/StatusCodeHandler/Pei/StatusCodeHandlerPei.inf
+        )
+      shell: cmd
+    
+    - name: Upload Build Artifacts (if build successful)
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: edk2-build-artifacts
+        path: |
+          edk2/Build/
+          edk2/BaseTools/Bin/
+        retention-days: 7
+
+  build-acpipatcher:
+    runs-on: windows-2022
+    
+    steps:
+    - name: Checkout EDK2 Setup Scripts
+      uses: actions/checkout@v4
+      with:
+        path: edk2-setup-scripts
+    
+    - name: Checkout EDK2 with ACPIPatcherPkg
+      uses: actions/checkout@v4
+      with:
+        repository: tianocore/edk2
+        path: edk2
+        submodules: true
+    
+    - name: Checkout ACPIPatcherPkg
+      uses: actions/checkout@v4
+      with:
+        repository: Goldfish64/ACPIPatcherPkg
+        path: edk2/ACPIPatcherPkg
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Setup Visual Studio
+      uses: microsoft/setup-msbuild@v2
+      with:
+        vs-version: '17.0'
+    
+    - name: Install NASM
+      run: |
+        # Download and install NASM
+        $nasmUrl = "https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/win64/nasm-2.16.01-win64.zip"
+        $nasmZip = "$env:TEMP\nasm.zip"
+        $nasmDir = "C:\NASM"
+        
+        Write-Host "Downloading NASM..."
+        Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
+        
+        Write-Host "Extracting NASM..."
+        Expand-Archive -Path $nasmZip -DestinationPath $env:TEMP
+        
+        Write-Host "Installing NASM to C:\NASM..."
+        New-Item -ItemType Directory -Path $nasmDir -Force
+        Copy-Item -Path "$env:TEMP\nasm-2.16.01\*" -Destination $nasmDir -Recurse -Force
+        
+        Write-Host "Adding NASM to PATH..."
+        echo "C:\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
+    
+    - name: Run EDK2 Setup Script
+      run: |
+        cd edk2
+        ..\edk2-setup-scripts\setup-edk2.bat . --ci
+      shell: cmd
+      env:
+        CI: true
+    
+    - name: Verify BaseTools Build
+      run: |
+        cd edk2
+        if not exist "BaseTools\Bin\Win32\GenFv.exe" (
+          echo "ERROR: GenFv.exe not found - BaseTools build failed"
+          exit /b 1
+        )
+        if not exist "BaseTools\Bin\Win32\GenFfs.exe" (
+          echo "ERROR: GenFfs.exe not found - BaseTools build failed"
+          exit /b 1
+        )
+        echo "BaseTools verification successful!"
+      shell: cmd
+    
+    - name: Build ACPIPatcherPkg
+      run: |
+        cd edk2
+        call edksetup.bat
+        echo "Building ACPIPatcherPkg..."
+        build -a X64 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc
+        echo "ACPIPatcherPkg build completed!"
+      shell: cmd
+    
+    - name: Verify ACPIPatcherPkg Build
+      run: |
+        cd edk2
+        if exist "Build\ACPIPatcherPkg\DEBUG_VS2022\X64\ACPIPatcherPkg\Drivers\ACPIPatcher\DEBUG\ACPIPatcher.efi" (
+          echo "SUCCESS: ACPIPatcher.efi built successfully!"
+          dir "Build\ACPIPatcherPkg\DEBUG_VS2022\X64\ACPIPatcherPkg\Drivers\ACPIPatcher\DEBUG\ACPIPatcher.efi"
+        ) else (
+          echo "ERROR: ACPIPatcher.efi not found in expected location"
+          echo "Searching for ACPIPatcher files..."
+          dir "Build\ACPIPatcherPkg" /s /b | findstr /i acpipatcher
+          exit /b 1
+        )
+      shell: cmd
+    
+    - name: Upload ACPIPatcherPkg Artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: acpipatcher-build-artifacts
+        path: |
+          edk2/Build/ACPIPatcherPkg/
+          edk2/BaseTools/Bin/
+        retention-days: 7
+
+  test-different-scenarios:
+    runs-on: windows-2022
+    strategy:
+      matrix:
+        scenario:
+          - name: "With Path Argument"
+            command: "setup-edk2.bat D:\\edk2 --ci"
+          - name: "CI Flag First"
+            command: "setup-edk2.bat --ci"
+          - name: "Environment Variable CI"
+            command: "setup-edk2.bat"
+            env_ci: "true"
+    
+    steps:
+    - name: Checkout EDK2 Setup Scripts
+      uses: actions/checkout@v4
+      with:
+        path: edk2-setup-scripts
+    
+    - name: Checkout EDK2 Repository
+      uses: actions/checkout@v4
+      with:
+        repository: tianocore/edk2
+        path: edk2
+        submodules: true
+    
+    - name: Checkout ACPIPatcherPkg (for testing)
+      uses: actions/checkout@v4
+      with:
+        repository: Goldfish64/ACPIPatcherPkg
+        path: edk2/ACPIPatcherPkg
+    
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    
+    - name: Setup Visual Studio
+      uses: microsoft/setup-msbuild@v2
+      with:
+        vs-version: '17.0'
+    
+    - name: Install NASM
+      run: |
+        $nasmUrl = "https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/win64/nasm-2.16.01-win64.zip"
+        $nasmZip = "$env:TEMP\nasm.zip"
+        $nasmDir = "C:\NASM"
+        
+        Invoke-WebRequest -Uri $nasmUrl -OutFile $nasmZip
+        Expand-Archive -Path $nasmZip -DestinationPath $env:TEMP
+        New-Item -ItemType Directory -Path $nasmDir -Force
+        Copy-Item -Path "$env:TEMP\nasm-2.16.01\*" -Destination $nasmDir -Recurse -Force
+        echo "C:\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
+    
+    - name: Test EDK2 Setup - ${{ matrix.scenario.name }}
+      run: |
+        # Create D:\edk2 symlink for path test
+        if ("${{ matrix.scenario.command }}".Contains("D:\edk2")) {
+          New-Item -ItemType SymbolicLink -Path "D:\edk2" -Target "$pwd\edk2" -Force
+        }
+        
+        cd edk2-setup-scripts
+        ${{ matrix.scenario.command }}
+      shell: pwsh
+      env:
+        CI: ${{ matrix.scenario.env_ci || 'true' }}
+    
+    - name: Test ACPIPatcherPkg Build - ${{ matrix.scenario.name }}
+      run: |
+        $workingDir = if ("${{ matrix.scenario.command }}".Contains("D:\edk2")) { "D:\edk2" } else { "edk2" }
+        cd $workingDir
+        cmd /c "call edksetup.bat && build -a X64 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc"
+      shell: pwsh
+      env:
+        CI: ${{ matrix.scenario.env_ci || 'true' }}
