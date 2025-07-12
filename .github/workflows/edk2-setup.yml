@@ -77,11 +77,20 @@ jobs:
         ) else (
           echo "WARNING: Brotli submodule missing - will attempt to fix"
           git submodule update --init --recursive
+          if exist "BaseTools\Source\C\BrotliCompress\brotli\c\include\brotli\encode.h" (
+            echo "Brotli submodule fixed successfully"
+          ) else (
+            echo "ERROR: Failed to initialize Brotli submodule"
+            exit /b 1
+          )
         )
         
         echo "Running setup script..."
+        echo "--- SETUP SCRIPT OUTPUT START ---"
         ..\edk2-setup-scripts\setup-edk2.bat . --ci
-        echo "Setup script completed with exit code: %ERRORLEVEL%"
+        set "SETUP_EXIT_CODE=%ERRORLEVEL%"
+        echo "--- SETUP SCRIPT OUTPUT END ---"
+        echo "Setup script completed with exit code: %SETUP_EXIT_CODE%"
         
         echo "Checking if BaseTools were built..."
         if exist "BaseTools\Bin\Win32\GenFv.exe" (
@@ -89,6 +98,15 @@ jobs:
           dir "BaseTools\Bin\Win32"
         ) else (
           echo "WARNING: BaseTools were NOT built by setup script"
+          echo "Setup script exit code was: %SETUP_EXIT_CODE%"
+          
+          echo "Checking for common build issues..."
+          if not exist "BaseTools\Source\C\BrotliCompress\brotli\c\include\brotli\encode.h" (
+            echo "ISSUE: Brotli submodule still missing"
+          )
+          
+          echo "Listing BaseTools directory structure..."
+          dir "BaseTools\Bin" /s
         )
       shell: cmd
       env:
