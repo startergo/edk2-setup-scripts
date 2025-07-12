@@ -29,6 +29,12 @@ jobs:
       with:
         python-version: '3.11'
     
+    - name: Install EDK2 Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install edk2-pytool-library edk2-pytool-extensions
+      shell: pwsh
+    
     - name: Setup Visual Studio
       uses: microsoft/setup-msbuild@v2
       with:
@@ -110,6 +116,7 @@ jobs:
         echo "Checking if BaseTools were built..."
         if exist "BaseTools\Bin\Win32\GenFv.exe" (
           echo "SUCCESS: BaseTools were built by setup script"
+          echo "Listing BaseTools\Bin\Win32 contents:"
           dir "BaseTools\Bin\Win32"
         ) else (
           echo "WARNING: BaseTools were NOT built by setup script"
@@ -121,7 +128,12 @@ jobs:
           )
           
           echo "Listing BaseTools directory structure..."
-          dir "BaseTools\Bin" /s
+          if exist "BaseTools\Bin" (
+            dir "BaseTools\Bin" /s
+          ) else (
+            echo "BaseTools\Bin directory does not exist"
+            dir "BaseTools"
+          )
         )
       shell: cmd
       env:
@@ -233,6 +245,12 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+    
+    - name: Install EDK2 Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install edk2-pytool-library edk2-pytool-extensions
+      shell: pwsh
     
     - name: Setup Visual Studio
       uses: microsoft/setup-msbuild@v2
@@ -392,6 +410,12 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+    
+    - name: Install EDK2 Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install edk2-pytool-library edk2-pytool-extensions
+      shell: pwsh
     
     - name: Setup Visual Studio
       uses: microsoft/setup-msbuild@v2
