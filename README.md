@@ -7,8 +7,8 @@ This package contains scripts for automated EDK2 UEFI development environment se
 ## Contents
 
 - **`setup-edk2.bat`** - Main setup script (generalized for any EDK2 repository)
-- **`EDK2-SETUP-GUIDE.md`** - Comprehensive documentation and usage guide
-- **`build-edk2-example.bat`** - Example of generated convenience script
+- **`ACPIPatcherPkg/`** - Example UEFI ACPI patcher package
+- **`.github/workflows/edk2-setup.yml`** - GitHub Actions CI/CD workflow
 - **`README.md`** - This file
 
 ## Quick Start
@@ -107,15 +107,15 @@ These scripts have been tested and validated:
 - ✅ BaseTools compilation with git submodules
 - ✅ Multiple Visual Studio versions (2019, 2022)
 - ✅ Custom package integration (ACPIPatcherPkg example)
-- ✅ Convenience script generation and menu system
+- ✅ GitHub Actions CI/CD workflow automation
+- ✅ Automated build artifact generation
 
 ## Documentation
 
-See `EDK2-SETUP-GUIDE.md` for detailed documentation including:
-- Prerequisites and installation
-- Troubleshooting guide
-- Advanced usage scenarios
-- Architecture and toolchain support
+The repository includes:
+- Complete GitHub Actions workflow for automated builds
+- ACPIPatcherPkg example for custom UEFI package integration
+- CI/CD ready setup script with automatic environment detection
 
 ## Support
 
