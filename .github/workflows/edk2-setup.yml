@@ -164,6 +164,13 @@ jobs:
       with:
         tag_name: v${{ github.run_number }}
         name: EDK2 Setup Scripts v${{ github.run_number }}
+        files: |
+          edk2/Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcher.efi
+          edk2/Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcherDxe.efi
+          edk2/Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcher.efi
+          edk2/Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcherDxe.efi
+          edk2/Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcher.efi
+          edk2/Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcherDxe.efi
         body: |
           ## EDK2 Setup Scripts Release v${{ github.run_number }}
           
@@ -173,12 +180,17 @@ jobs:
           - ✅ `setup-edk2.bat` - Main EDK2 setup script with CI support
           - ✅ `ACPIPatcherPkg/` - Example UEFI ACPI patcher package
           - ✅ GitHub Actions workflow for automated builds
-          - ✅ Successfully built BaseTools and ACPIPatcherPkg
+          - ✅ **EFI Binaries** - Ready-to-use UEFI drivers (X64, IA32, AARCH64)
+          
+          ### Built EFI Drivers
+          - `ACPIPatcher.efi` - UEFI Application (X64, IA32, AARCH64)
+          - `ACPIPatcherDxe.efi` - UEFI DXE Driver (X64, IA32, AARCH64)
           
           ### Validation Status
           - ✅ BaseTools compilation successful
           - ✅ ACPIPatcherPkg build successful (X64, IA32, AARCH64)
           - ✅ Multi-architecture support validated
+          - ✅ EFI binaries attached to release
           - ✅ Build artifacts generated
           - ✅ CI/CD workflow validated
           
@@ -186,6 +198,11 @@ jobs:
           1. Download `setup-edk2.bat` from this repository
           2. Copy to your EDK2 repository root
           3. Run: `setup-edk2.bat` (interactive) or `setup-edk2.bat --ci` (automated)
+          
+          ### Using the EFI Binaries
+          1. Download the appropriate architecture EFI files from this release
+          2. Copy to your ESP partition or UEFI boot media
+          3. Load via UEFI Shell or boot manager
           
           **Build Time:** ~1-2 minutes (multi-architecture)  
           **Commit:** ${{ github.sha }}  
