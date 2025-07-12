@@ -74,124 +74,33 @@ jobs:
         echo "C:\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       shell: pwsh
     
-    - name: Run EDK2 Setup Script
+    - name: Build BaseTools
       run: |
         cd edk2
-        echo "Current directory: %CD%"
-        echo "Checking for edksetup.bat..."
-        if exist "edksetup.bat" (
-          echo "Found edksetup.bat"
-        ) else (
-          echo "ERROR: edksetup.bat not found!"
-          dir
+        echo "Setting up Visual Studio environment..."
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+        
+        echo "Setting up Python environment..."
+        where python
+        set "PYTHON_COMMAND=python"
+        python --version
+        
+        echo "Setting EDK2 environment variables..."
+        set "WORKSPACE=%CD%"
+        set "EDK_TOOLS_PATH=%CD%\BaseTools"
+        set "BASE_TOOLS_PATH=%CD%\BaseTools"
+        
+        echo "Building BaseTools with Edk2ToolsBuild..."
+        cd BaseTools
+        python Edk2ToolsBuild.py
+        
+        if %ERRORLEVEL% neq 0 (
+          echo "ERROR: BaseTools build failed"
           exit /b 1
         )
         
-        echo "Checking git submodules status..."
-        git submodule status
-        
-        echo "Checking for Brotli submodule..."
-        if exist "BaseTools\Source\C\BrotliCompress\brotli\c\include\brotli\encode.h" (
-          echo "Brotli submodule is properly initialized"
-        ) else (
-          echo "WARNING: Brotli submodule missing - will attempt to fix"
-          git submodule update --init --recursive
-          if exist "BaseTools\Source\C\BrotliCompress\brotli\c\include\brotli\encode.h" (
-            echo "Brotli submodule fixed successfully"
-          ) else (
-            echo "ERROR: Failed to initialize Brotli submodule"
-            exit /b 1
-          )
-        )
-        
-        echo "Debugging Visual Studio detection..."
-        echo "Checking common VS paths:"
-        if exist "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" (
-          echo "Found VS2022 Enterprise vcvars64.bat"
-        )
-        if exist "%ProgramFiles(x86)%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars32.bat" (
-          echo "Found VS2022 Enterprise vcvars32.bat"
-        )
-        if exist "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" (
-          echo "Found vswhere.exe"
-          "%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -version "[16.0,)" -property installationPath
-        ) else (
-          echo "vswhere.exe not found"
-        )
-        
-        echo "Running setup script..."
-        echo "--- SETUP SCRIPT OUTPUT START ---"
-        ..\edk2-setup-scripts\setup-edk2.bat . --ci
-        set "SETUP_EXIT_CODE=%ERRORLEVEL%"
-        echo "--- SETUP SCRIPT OUTPUT END ---"
-        echo "Setup script completed with exit code: %SETUP_EXIT_CODE%"
-        
-        echo "Checking if BaseTools were built..."
-        if exist "BaseTools\Bin\Win32\GenFv.exe" (
-          echo "SUCCESS: BaseTools were built by setup script"
-          echo "Listing BaseTools\Bin\Win32 contents:"
-          dir "BaseTools\Bin\Win32"
-        ) else (
-          echo "WARNING: BaseTools were NOT built by setup script"
-          echo "Setup script exit code was: %SETUP_EXIT_CODE%"
-          
-          echo "Checking for common build issues..."
-          if not exist "BaseTools\Source\C\BrotliCompress\brotli\c\include\brotli\encode.h" (
-            echo "ISSUE: Brotli submodule still missing"
-          )
-          
-          echo "Listing BaseTools directory structure..."
-          if exist "BaseTools\Bin" (
-            dir "BaseTools\Bin" /s
-          ) else (
-            echo "BaseTools\Bin directory does not exist"
-            dir "BaseTools"
-          )
-        )
-      shell: cmd
-      env:
-        # Ensure CI environment is detected
-        CI: true
-    
-    - name: Manual BaseTools Build (if needed)
-      run: |
-        cd edk2
-        if not exist "BaseTools\Bin\Win32\GenFv.exe" (
-          echo "BaseTools not found, building manually..."
-          echo "Setting up Visual Studio environment..."
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          
-          echo "Setting up Python environment..."
-          where python
-          set "PYTHON_COMMAND=python"
-          python --version
-          
-          echo "Setting EDK2 environment variables..."
-          set "WORKSPACE=%CD%"
-          set "EDK_TOOLS_PATH=%CD%\BaseTools"
-          set "BASE_TOOLS_PATH=%CD%\BaseTools"
-          
-          echo "Building BaseTools with Edk2ToolsBuild..."
-          cd BaseTools
-          python Edk2ToolsBuild.py
-          
-          if %ERRORLEVEL% neq 0 (
-            echo "Python build failed, trying manual nmake with relaxed warnings..."
-            cd Source\C
-            echo "Modifying Makefile to disable warnings as errors..."
-            powershell -Command "(Get-Content Makefile) -replace '/WX', '' | Set-Content Makefile"
-            nmake -f Makefile
-          )
-          
-          if %ERRORLEVEL% neq 0 (
-            echo "ERROR: BaseTools build failed"
-            exit /b 1
-          )
-          
-          cd %WORKSPACE%
-        ) else (
-          echo "BaseTools already built"
-        )
+        echo "BaseTools build completed successfully"
+        cd %WORKSPACE%
       shell: cmd
     
     - name: Verify BaseTools Build
@@ -211,14 +120,19 @@ jobs:
     - name: Build ACPIPatcherPkg
       run: |
         cd edk2
+        echo "Setting up EDK2 environment..."
         call edksetup.bat
-        # Build ACPIPatcherPkg if it exists
+        
+        echo "Verifying ACPIPatcherPkg is available..."
         if exist "ACPIPatcherPkg\ACPIPatcherPkg.dsc" (
+          echo "SUCCESS: ACPIPatcherPkg.dsc found"
           echo "Building ACPIPatcherPkg..."
           build -a X64 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc
+          echo "ACPIPatcherPkg build completed!"
         ) else (
-          echo "ACPIPatcherPkg not found, building MdeModulePkg as fallback..."
-          build -a X64 -t VS2022 -p MdeModulePkg/MdeModulePkg.dsc -m MdeModulePkg/Universal/StatusCodeHandler/Pei/StatusCodeHandlerPei.inf
+          echo "ERROR: ACPIPatcherPkg.dsc not found!"
+          dir ACPIPatcherPkg
+          exit /b 1
         )
       shell: cmd
     
@@ -320,14 +234,23 @@ jobs:
     - name: Verify ACPIPatcherPkg Build
       run: |
         cd edk2
-        if exist "Build\ACPIPatcherPkg\DEBUG_VS2022\X64\ACPIPatcherPkg\Drivers\ACPIPatcher\DEBUG\ACPIPatcher.efi" (
+        echo "Checking for ACPIPatcher build artifacts..."
+        
+        if exist "Build\ACPIPatcher\DEBUG_VS2022\X64\ACPIPatcher.efi" (
           echo "SUCCESS: ACPIPatcher.efi built successfully!"
-          dir "Build\ACPIPatcherPkg\DEBUG_VS2022\X64\ACPIPatcherPkg\Drivers\ACPIPatcher\DEBUG\ACPIPatcher.efi"
+          dir "Build\ACPIPatcher\DEBUG_VS2022\X64\ACPIPatcher.efi"
         ) else (
           echo "ERROR: ACPIPatcher.efi not found in expected location"
           echo "Searching for ACPIPatcher files..."
-          dir "Build\ACPIPatcherPkg" /s /b | findstr /i acpipatcher
+          dir "Build" /s /b | findstr /i acpipatcher
           exit /b 1
+        )
+        
+        if exist "Build\ACPIPatcher\DEBUG_VS2022\X64\ACPIPatcherDxe.efi" (
+          echo "SUCCESS: ACPIPatcherDxe.efi also built successfully!"
+          dir "Build\ACPIPatcher\DEBUG_VS2022\X64\ACPIPatcherDxe.efi"
+        ) else (
+          echo "WARNING: ACPIPatcherDxe.efi not found"
         )
       shell: cmd
     
@@ -337,7 +260,7 @@ jobs:
       with:
         name: acpipatcher-build-artifacts
         path: |
-          edk2/Build/ACPIPatcherPkg/
+          edk2/Build/ACPIPatcher/
           edk2/BaseTools/Bin/
         retention-days: 7
 
@@ -412,7 +335,7 @@ jobs:
         }
         
         cd edk2-setup-scripts
-        ${{ matrix.scenario.command }}
+        cmd /c "${{ matrix.scenario.command }}"
       shell: pwsh
       env:
         CI: ${{ matrix.scenario.env_ci || 'true' }}
