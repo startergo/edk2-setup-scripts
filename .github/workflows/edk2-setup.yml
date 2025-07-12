@@ -24,6 +24,12 @@ jobs:
         path: edk2
         submodules: true
     
+    - name: Checkout ACPIPatcherPkg
+      uses: actions/checkout@v4
+      with:
+        repository: Goldfish64/ACPIPatcherPkg
+        path: edk2/ACPIPatcherPkg
+    
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
