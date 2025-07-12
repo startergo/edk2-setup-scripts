@@ -93,9 +93,9 @@ jobs:
           set "EDK_TOOLS_PATH=%CD%\BaseTools"
           set "BASE_TOOLS_PATH=%CD%\BaseTools"
           
-          echo "Building BaseTools with relaxed warnings..."
+          echo "Building BaseTools with Edk2ToolsBuild..."
           cd BaseTools
-          python BuildTools.py
+          python Edk2ToolsBuild.py
           
           if %ERRORLEVEL% neq 0 (
             echo "Python build failed, trying manual nmake with relaxed warnings..."
@@ -233,9 +233,9 @@ jobs:
           set "EDK_TOOLS_PATH=%CD%\BaseTools"
           set "BASE_TOOLS_PATH=%CD%\BaseTools"
           
-          echo "Building BaseTools with relaxed warnings..."
+          echo "Building BaseTools with Edk2ToolsBuild..."
           cd BaseTools
-          python BuildTools.py
+          python Edk2ToolsBuild.py
           
           if %ERRORLEVEL% neq 0 (
             echo "Python build failed, trying manual nmake with relaxed warnings..."
