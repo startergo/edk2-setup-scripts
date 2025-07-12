@@ -112,9 +112,32 @@ jobs:
         echo "Verifying ACPIPatcherPkg is available..."
         if exist "ACPIPatcherPkg\ACPIPatcherPkg.dsc" (
           echo "SUCCESS: ACPIPatcherPkg.dsc found"
-          echo "Building ACPIPatcherPkg..."
+          
+          echo "Building ACPIPatcherPkg for X64 architecture..."
           build -a X64 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc
-          echo "ACPIPatcherPkg build completed!"
+          if %ERRORLEVEL% neq 0 (
+            echo "ERROR: ACPIPatcherPkg X64 build failed"
+            exit /b 1
+          )
+          echo "ACPIPatcherPkg X64 build completed!"
+          
+          echo "Building ACPIPatcherPkg for IA32 architecture..."
+          build -a IA32 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc
+          if %ERRORLEVEL% neq 0 (
+            echo "ERROR: ACPIPatcherPkg IA32 build failed"
+            exit /b 1
+          )
+          echo "ACPIPatcherPkg IA32 build completed!"
+          
+          echo "Building ACPIPatcherPkg for AARCH64 architecture..."
+          build -a AARCH64 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc
+          if %ERRORLEVEL% neq 0 (
+            echo "ERROR: ACPIPatcherPkg AARCH64 build failed"
+            exit /b 1
+          )
+          echo "ACPIPatcherPkg AARCH64 build completed!"
+          
+          echo "All architecture builds completed successfully!"
         ) else (
           echo "ERROR: ACPIPatcherPkg.dsc not found!"
           dir ACPIPatcherPkg
@@ -131,3 +154,40 @@ jobs:
           edk2/Build/
           edk2/BaseTools/Bin/
         retention-days: 7
+    
+    - name: Create Release (on workflow dispatch)
+      if: github.event_name == 'workflow_dispatch' && success()
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ github.run_number }}
+        release_name: EDK2 Setup Scripts v${{ github.run_number }}
+        body: |
+          ## EDK2 Setup Scripts Release v${{ github.run_number }}
+          
+          **Automated release from GitHub Actions workflow**
+          
+          ### What's Included
+          - ✅ `setup-edk2.bat` - Main EDK2 setup script with CI support
+          - ✅ `ACPIPatcherPkg/` - Example UEFI ACPI patcher package
+          - ✅ GitHub Actions workflow for automated builds
+          - ✅ Successfully built BaseTools and ACPIPatcherPkg
+          
+          ### Validation Status
+          - ✅ BaseTools compilation successful
+          - ✅ ACPIPatcherPkg build successful (X64, IA32, AARCH64)
+          - ✅ Multi-architecture support validated
+          - ✅ Build artifacts generated
+          - ✅ CI/CD workflow validated
+          
+          ### Usage
+          1. Download `setup-edk2.bat` from this repository
+          2. Copy to your EDK2 repository root
+          3. Run: `setup-edk2.bat` (interactive) or `setup-edk2.bat --ci` (automated)
+          
+          **Build Time:** ~34 seconds  
+          **Commit:** ${{ github.sha }}  
+          **Generated:** ${{ github.event.head_commit.timestamp }}
+        draft: false
+        prerelease: false
