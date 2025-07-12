@@ -158,12 +158,40 @@ jobs:
           edk2/BaseTools/Bin/
         retention-days: 7
     
+    - name: Generate Version Number
+      id: version
+      run: |
+        # Get the latest release tag
+        $latestTag = git tag -l "v*.*.*" | Sort-Object {[version]($_ -replace '^v')} | Select-Object -Last 1
+        
+        if ($latestTag) {
+          Write-Host "Latest tag found: $latestTag"
+          # Extract version numbers
+          $version = $latestTag -replace '^v'
+          $parts = $version -split '\.'
+          $major = [int]$parts[0]
+          $minor = [int]$parts[1]
+          $patch = [int]$parts[2]
+          
+          # Increment patch version for new release
+          $patch++
+          $newVersion = "$major.$minor.$patch"
+        } else {
+          Write-Host "No previous tags found, starting with v1.0.0"
+          $newVersion = "1.0.0"
+        }
+        
+        Write-Host "New version will be: v$newVersion"
+        echo "version=$newVersion" >> $env:GITHUB_OUTPUT
+        echo "tag=v$newVersion" >> $env:GITHUB_OUTPUT
+      shell: pwsh
+
     - name: Create Release (on workflow dispatch)
       if: github.event_name == 'workflow_dispatch' && success()
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v${{ github.run_number }}
-        name: EDK2 Setup Scripts v${{ github.run_number }}
+        tag_name: ${{ steps.version.outputs.tag }}
+        name: EDK2 Setup Scripts ${{ steps.version.outputs.tag }}
         files: |
           edk2/Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcher.efi
           edk2/Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcherDxe.efi
@@ -172,7 +200,7 @@ jobs:
           edk2/Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcher.efi
           edk2/Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcherDxe.efi
         body: |
-          ## EDK2 Setup Scripts Release v${{ github.run_number }}
+          ## EDK2 Setup Scripts Release ${{ steps.version.outputs.tag }}
           
           **Automated release from GitHub Actions workflow**
           
@@ -205,6 +233,7 @@ jobs:
           3. Load via UEFI Shell or boot manager
           
           **Build Time:** ~1-2 minutes (multi-architecture)  
+          **Version:** ${{ steps.version.outputs.version }}  
           **Commit:** ${{ github.sha }}  
           **Generated:** ${{ github.event.head_commit.timestamp }}
         draft: false
