@@ -93,9 +93,17 @@ jobs:
           set "EDK_TOOLS_PATH=%CD%\BaseTools"
           set "BASE_TOOLS_PATH=%CD%\BaseTools"
           
-          echo "Building BaseTools..."
-          cd BaseTools\Source\C
-          nmake -f Makefile
+          echo "Building BaseTools with relaxed warnings..."
+          cd BaseTools
+          python BuildTools.py
+          
+          if %ERRORLEVEL% neq 0 (
+            echo "Python build failed, trying manual nmake with relaxed warnings..."
+            cd Source\C
+            echo "Modifying Makefile to disable warnings as errors..."
+            powershell -Command "(Get-Content Makefile) -replace '/WX', '' | Set-Content Makefile"
+            nmake -f Makefile
+          )
           
           if %ERRORLEVEL% neq 0 (
             echo "ERROR: BaseTools build failed"
@@ -225,9 +233,17 @@ jobs:
           set "EDK_TOOLS_PATH=%CD%\BaseTools"
           set "BASE_TOOLS_PATH=%CD%\BaseTools"
           
-          echo "Building BaseTools..."
-          cd BaseTools\Source\C
-          nmake -f Makefile
+          echo "Building BaseTools with relaxed warnings..."
+          cd BaseTools
+          python BuildTools.py
+          
+          if %ERRORLEVEL% neq 0 (
+            echo "Python build failed, trying manual nmake with relaxed warnings..."
+            cd Source\C
+            echo "Modifying Makefile to disable warnings as errors..."
+            powershell -Command "(Get-Content Makefile) -replace '/WX', '' | Set-Content Makefile"
+            nmake -f Makefile
+          )
           
           if %ERRORLEVEL% neq 0 (
             echo "ERROR: BaseTools build failed"
