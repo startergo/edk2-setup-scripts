@@ -32,7 +32,7 @@ jobs:
     - name: Install EDK2 Python Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install edk2-pytool-library edk2-pytool-extensions
+        pip install edk2-pytool-library edk2-pytool-extensions regex
       shell: pwsh
     
     - name: Setup Visual Studio
@@ -249,7 +249,7 @@ jobs:
     - name: Install EDK2 Python Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install edk2-pytool-library edk2-pytool-extensions
+        pip install edk2-pytool-library edk2-pytool-extensions regex
       shell: pwsh
     
     - name: Setup Visual Studio
@@ -414,7 +414,7 @@ jobs:
     - name: Install EDK2 Python Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install edk2-pytool-library edk2-pytool-extensions
+        pip install edk2-pytool-library edk2-pytool-extensions regex
       shell: pwsh
     
     - name: Setup Visual Studio
