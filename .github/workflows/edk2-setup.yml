@@ -67,9 +67,29 @@ jobs:
           dir
           exit /b 1
         )
+        
+        echo "Checking git submodules status..."
+        git submodule status
+        
+        echo "Checking for Brotli submodule..."
+        if exist "BaseTools\Source\C\BrotliCompress\brotli\c\include\brotli\encode.h" (
+          echo "Brotli submodule is properly initialized"
+        ) else (
+          echo "WARNING: Brotli submodule missing - will attempt to fix"
+          git submodule update --init --recursive
+        )
+        
         echo "Running setup script..."
         ..\edk2-setup-scripts\setup-edk2.bat . --ci
         echo "Setup script completed with exit code: %ERRORLEVEL%"
+        
+        echo "Checking if BaseTools were built..."
+        if exist "BaseTools\Bin\Win32\GenFv.exe" (
+          echo "SUCCESS: BaseTools were built by setup script"
+          dir "BaseTools\Bin\Win32"
+        ) else (
+          echo "WARNING: BaseTools were NOT built by setup script"
+        )
       shell: cmd
       env:
         # Ensure CI environment is detected
