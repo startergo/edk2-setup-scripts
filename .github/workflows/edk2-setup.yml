@@ -58,11 +58,50 @@ jobs:
     - name: Run EDK2 Setup Script
       run: |
         cd edk2
+        echo "Current directory: %CD%"
+        echo "Checking for edksetup.bat..."
+        if exist "edksetup.bat" (
+          echo "Found edksetup.bat"
+        ) else (
+          echo "ERROR: edksetup.bat not found!"
+          dir
+          exit /b 1
+        )
+        echo "Running setup script..."
         ..\edk2-setup-scripts\setup-edk2.bat . --ci
+        echo "Setup script completed with exit code: %ERRORLEVEL%"
       shell: cmd
       env:
         # Ensure CI environment is detected
         CI: true
+    
+    - name: Manual BaseTools Build (if needed)
+      run: |
+        cd edk2
+        if not exist "BaseTools\Bin\Win32\GenFv.exe" (
+          echo "BaseTools not found, building manually..."
+          echo "Setting up Visual Studio environment..."
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          
+          echo "Setting EDK2 environment variables..."
+          set "WORKSPACE=%CD%"
+          set "EDK_TOOLS_PATH=%CD%\BaseTools"
+          set "BASE_TOOLS_PATH=%CD%\BaseTools"
+          
+          echo "Building BaseTools..."
+          cd BaseTools\Source\C
+          nmake -f Makefile
+          
+          if %ERRORLEVEL% neq 0 (
+            echo "ERROR: BaseTools build failed"
+            exit /b 1
+          )
+          
+          cd %WORKSPACE%
+        ) else (
+          echo "BaseTools already built"
+        )
+      shell: cmd
     
     - name: Verify BaseTools Build
       run: |
