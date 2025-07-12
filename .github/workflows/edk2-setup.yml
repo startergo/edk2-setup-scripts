@@ -221,6 +221,7 @@ jobs:
 
   build-acpipatcher:
     runs-on: windows-2022
+    needs: setup-edk2
     
     steps:
     - name: Checkout EDK2 Setup Scripts
@@ -241,16 +242,16 @@ jobs:
         repository: Goldfish64/ACPIPatcherPkg
         path: edk2/ACPIPatcherPkg
     
+    - name: Download BaseTools Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: edk2-build-artifacts
+        path: edk2/
+    
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
-    
-    - name: Install EDK2 Python Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install edk2-pytool-library edk2-pytool-extensions regex
-      shell: pwsh
     
     - name: Setup Visual Studio
       uses: microsoft/setup-msbuild@v2
@@ -278,72 +279,24 @@ jobs:
         echo "C:\NASM" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       shell: pwsh
     
-    - name: Run EDK2 Setup Script
+    - name: Verify BaseTools from Artifacts
       run: |
         cd edk2
-        ..\edk2-setup-scripts\setup-edk2.bat . --ci
-      shell: cmd
-      env:
-        CI: true
-    
-    - name: Manual BaseTools Build (if needed)
-      run: |
-        cd edk2
-        if not exist "BaseTools\Bin\Win32\GenFv.exe" (
-          echo "BaseTools not found, building manually..."
-          echo "Setting up Visual Studio environment..."
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          
-          echo "Setting up Python environment..."
-          where python
-          set "PYTHON_COMMAND=python"
-          python --version
-          
-          echo "Setting EDK2 environment variables..."
-          set "WORKSPACE=%CD%"
-          set "EDK_TOOLS_PATH=%CD%\BaseTools"
-          set "BASE_TOOLS_PATH=%CD%\BaseTools"
-          
-          echo "Building BaseTools with Edk2ToolsBuild..."
-          cd BaseTools
-          python Edk2ToolsBuild.py
-          
-          if %ERRORLEVEL% neq 0 (
-            echo "Python build failed, trying manual nmake with relaxed warnings..."
-            cd Source\C
-            echo "Modifying Makefile to disable warnings as errors..."
-            powershell -Command "(Get-Content Makefile) -replace '/WX', '' | Set-Content Makefile"
-            nmake -f Makefile
-          )
-          
-          if %ERRORLEVEL% neq 0 (
-            echo "ERROR: BaseTools build failed"
-            exit /b 1
-          )
-          
-          cd %WORKSPACE%
+        echo "Checking downloaded BaseTools..."
+        if exist "BaseTools\Bin\Win32\GenFv.exe" (
+          echo "SUCCESS: BaseTools downloaded and available"
+          dir "BaseTools\Bin\Win32"
         ) else (
-          echo "BaseTools already built"
-        )
-      shell: cmd
-    
-    - name: Verify BaseTools Build
-      run: |
-        cd edk2
-        if not exist "BaseTools\Bin\Win32\GenFv.exe" (
-          echo "ERROR: GenFv.exe not found - BaseTools build failed"
+          echo "ERROR: BaseTools not found in artifacts"
+          dir "BaseTools" /s
           exit /b 1
         )
-        if not exist "BaseTools\Bin\Win32\GenFfs.exe" (
-          echo "ERROR: GenFfs.exe not found - BaseTools build failed"
-          exit /b 1
-        )
-        echo "BaseTools verification successful!"
       shell: cmd
     
     - name: Build ACPIPatcherPkg
       run: |
         cd edk2
+        echo "Setting up EDK2 environment..."
         call edksetup.bat
         echo "Building ACPIPatcherPkg..."
         build -a X64 -t VS2022 -p ACPIPatcherPkg/ACPIPatcherPkg.dsc
@@ -376,6 +329,7 @@ jobs:
 
   test-different-scenarios:
     runs-on: windows-2022
+    needs: setup-edk2
     strategy:
       matrix:
         scenario:
