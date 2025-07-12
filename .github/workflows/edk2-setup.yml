@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   setup-edk2:
     runs-on: windows-2022
@@ -157,12 +160,10 @@ jobs:
     
     - name: Create Release (on workflow dispatch)
       if: github.event_name == 'workflow_dispatch' && success()
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: v${{ github.run_number }}
-        release_name: EDK2 Setup Scripts v${{ github.run_number }}
+        name: EDK2 Setup Scripts v${{ github.run_number }}
         body: |
           ## EDK2 Setup Scripts Release v${{ github.run_number }}
           
@@ -186,7 +187,7 @@ jobs:
           2. Copy to your EDK2 repository root
           3. Run: `setup-edk2.bat` (interactive) or `setup-edk2.bat --ci` (automated)
           
-          **Build Time:** ~34 seconds  
+          **Build Time:** ~1-2 minutes (multi-architecture)  
           **Commit:** ${{ github.sha }}  
           **Generated:** ${{ github.event.head_commit.timestamp }}
         draft: false
