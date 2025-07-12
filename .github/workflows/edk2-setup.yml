@@ -19,6 +19,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         path: edk2-setup-scripts
+        fetch-depth: 0
     
     - name: Checkout EDK2 Repository
       uses: actions/checkout@v4
@@ -161,6 +162,9 @@ jobs:
     - name: Generate Version Number
       id: version
       run: |
+        # Change to the correct git repository directory
+        cd edk2-setup-scripts
+        
         # Get the latest release tag
         $latestTag = git tag -l "v*.*.*" | Sort-Object {[version]($_ -replace '^v')} | Select-Object -Last 1
         
