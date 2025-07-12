@@ -225,8 +225,17 @@ PatchAcpi (
     }
     
     AcpiDebugPrint(DEBUG_VERBOSE, L"  File opened successfully\n");
-    
-    Status = FsReadFileToBuffer(FileProtocol, FileInfo->FileSize, &FileBuffer);
+
+    // Check if file size fits in UINTN (important for IA32 builds)
+    if (FileInfo->FileSize > ~(UINTN)0) {
+      AcpiDebugPrint(DEBUG_ERROR, L"File %s is too large (%llu bytes) for this architecture\n", 
+                     FileInfo->FileName, FileInfo->FileSize);
+      FileProtocol->Close(FileProtocol);
+      FileProtocol = NULL;
+      continue; // Skip this file and continue with others
+    }
+
+    Status = FsReadFileToBuffer(FileProtocol, (UINTN)FileInfo->FileSize, &FileBuffer);
     FileProtocol->Close(FileProtocol);
     FileProtocol = NULL;
     
@@ -246,7 +255,7 @@ PatchAcpi (
 
     // Validate the ACPI table
     AcpiDebugPrint(DEBUG_VERBOSE, L"  Validating ACPI table...\n");
-    Status = ValidateAcpiTable(FileBuffer, FileInfo->FileSize);
+    Status = ValidateAcpiTable(FileBuffer, (UINTN)FileInfo->FileSize);
     if (EFI_ERROR(Status)) {
       AcpiDebugPrint(DEBUG_ERROR, L"Invalid ACPI table in file %s: %r\n", FileInfo->FileName, Status);
       gBS->FreePool(FileBuffer);
