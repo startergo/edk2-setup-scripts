@@ -149,6 +149,115 @@ jobs:
         )
       shell: cmd
     
+    - name: Verify Build Outputs
+      run: |
+        cd edk2
+        echo "=== Verifying build outputs exist ==="
+        
+        # Check X64 builds
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcher.efi") {
+          echo "✅ Found X64 ACPIPatcher.efi"
+          Get-Item "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcher.efi" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ Missing X64 ACPIPatcher.efi"
+        }
+        
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcherDxe.efi") {
+          echo "✅ Found X64 ACPIPatcherDxe.efi"
+          Get-Item "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcherDxe.efi" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ Missing X64 ACPIPatcherDxe.efi"
+        }
+        
+        # Check IA32 builds
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcher.efi") {
+          echo "✅ Found IA32 ACPIPatcher.efi"
+          Get-Item "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcher.efi" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ Missing IA32 ACPIPatcher.efi"
+        }
+        
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcherDxe.efi") {
+          echo "✅ Found IA32 ACPIPatcherDxe.efi"
+          Get-Item "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcherDxe.efi" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ Missing IA32 ACPIPatcherDxe.efi"
+        }
+        
+        # Check AARCH64 builds
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcher.efi") {
+          echo "✅ Found AARCH64 ACPIPatcher.efi"
+          Get-Item "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcher.efi" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ Missing AARCH64 ACPIPatcher.efi"
+        }
+        
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcherDxe.efi") {
+          echo "✅ Found AARCH64 ACPIPatcherDxe.efi"
+          Get-Item "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcherDxe.efi" | Select-Object Name, Length, LastWriteTime
+        } else {
+          echo "❌ Missing AARCH64 ACPIPatcherDxe.efi"
+        }
+        
+        echo "=== Directory structure ==="
+        Get-ChildItem "Build/ACPIPatcher/DEBUG_VS2022" -Recurse -Name "*.efi"
+      shell: pwsh
+
+    - name: Create Release Archive
+      run: |
+        cd edk2
+        echo "Creating release archive with all EFI binaries..."
+        
+        # Create release directory structure
+        New-Item -ItemType Directory -Path "Release" -Force
+        New-Item -ItemType Directory -Path "Release/X64" -Force
+        New-Item -ItemType Directory -Path "Release/IA32" -Force
+        New-Item -ItemType Directory -Path "Release/AARCH64" -Force
+        
+        # Copy X64 binaries with renamed files
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcher.efi") {
+          Copy-Item "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcher.efi" "Release/X64/ACPIPatcher-X64.efi"
+          echo "✅ Copied ACPIPatcher-X64.efi"
+        }
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcherDxe.efi") {
+          Copy-Item "Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcherDxe.efi" "Release/X64/ACPIPatcherDxe-X64.efi"
+          echo "✅ Copied ACPIPatcherDxe-X64.efi"
+        }
+        
+        # Copy IA32 binaries with renamed files
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcher.efi") {
+          Copy-Item "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcher.efi" "Release/IA32/ACPIPatcher-IA32.efi"
+          echo "✅ Copied ACPIPatcher-IA32.efi"
+        }
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcherDxe.efi") {
+          Copy-Item "Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcherDxe.efi" "Release/IA32/ACPIPatcherDxe-IA32.efi"
+          echo "✅ Copied ACPIPatcherDxe-IA32.efi"
+        }
+        
+        # Copy AARCH64 binaries with renamed files
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcher.efi") {
+          Copy-Item "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcher.efi" "Release/AARCH64/ACPIPatcher-AARCH64.efi"
+          echo "✅ Copied ACPIPatcher-AARCH64.efi"
+        }
+        if (Test-Path "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcherDxe.efi") {
+          Copy-Item "Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcherDxe.efi" "Release/AARCH64/ACPIPatcherDxe-AARCH64.efi"
+          echo "✅ Copied ACPIPatcherDxe-AARCH64.efi"
+        }
+        
+        # Create ZIP archive
+        Compress-Archive -Path "Release/*" -DestinationPath "ACPIPatcher-AllArchitectures.zip" -Force
+        echo "✅ Created ACPIPatcher-AllArchitectures.zip"
+        
+        # Show archive contents
+        echo "=== Archive contents ==="
+        Get-ChildItem "Release" -Recurse
+        
+        # Show archive file info
+        if (Test-Path "ACPIPatcher-AllArchitectures.zip") {
+          Get-Item "ACPIPatcher-AllArchitectures.zip" | Select-Object Name, Length, LastWriteTime
+        }
+      shell: pwsh
+
     - name: Upload Build Artifacts (if build successful)
       if: success()
       uses: actions/upload-artifact@v4
@@ -157,6 +266,8 @@ jobs:
         path: |
           edk2/Build/
           edk2/BaseTools/Bin/
+          edk2/Release/
+          edk2/ACPIPatcher-AllArchitectures.zip
         retention-days: 7
     
     - name: Generate Version Number
@@ -197,12 +308,13 @@ jobs:
         tag_name: ${{ steps.version.outputs.tag }}
         name: EDK2 Setup Scripts ${{ steps.version.outputs.tag }}
         files: |
-          edk2/Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcher.efi
-          edk2/Build/ACPIPatcher/DEBUG_VS2022/X64/ACPIPatcherDxe.efi
-          edk2/Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcher.efi
-          edk2/Build/ACPIPatcher/DEBUG_VS2022/IA32/ACPIPatcherDxe.efi
-          edk2/Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcher.efi
-          edk2/Build/ACPIPatcher/DEBUG_VS2022/AARCH64/ACPIPatcherDxe.efi
+          edk2/Release/X64/ACPIPatcher-X64.efi
+          edk2/Release/X64/ACPIPatcherDxe-X64.efi
+          edk2/Release/IA32/ACPIPatcher-IA32.efi
+          edk2/Release/IA32/ACPIPatcherDxe-IA32.efi
+          edk2/Release/AARCH64/ACPIPatcher-AARCH64.efi
+          edk2/Release/AARCH64/ACPIPatcherDxe-AARCH64.efi
+          edk2/ACPIPatcher-AllArchitectures.zip
         body: |
           ## EDK2 Setup Scripts Release ${{ steps.version.outputs.tag }}
           
@@ -215,8 +327,13 @@ jobs:
           - ✅ **EFI Binaries** - Ready-to-use UEFI drivers (X64, IA32, AARCH64)
           
           ### Built EFI Drivers
-          - `ACPIPatcher.efi` - UEFI Application (X64, IA32, AARCH64)
-          - `ACPIPatcherDxe.efi` - UEFI DXE Driver (X64, IA32, AARCH64)
+          - `ACPIPatcher-X64.efi` - UEFI Application (64-bit Intel/AMD)
+          - `ACPIPatcherDxe-X64.efi` - UEFI DXE Driver (64-bit Intel/AMD)
+          - `ACPIPatcher-IA32.efi` - UEFI Application (32-bit Intel/AMD)
+          - `ACPIPatcherDxe-IA32.efi` - UEFI DXE Driver (32-bit Intel/AMD)
+          - `ACPIPatcher-AARCH64.efi` - UEFI Application (64-bit ARM)
+          - `ACPIPatcherDxe-AARCH64.efi` - UEFI DXE Driver (64-bit ARM)
+          - `ACPIPatcher-AllArchitectures.zip` - Complete archive with all binaries
           
           ### Validation Status
           - ✅ BaseTools compilation successful
